@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Cemre'nin Zambağı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;600&display=swap">
+<style>
+/* Layout: tek sütun gece sahnesi; üstte zambak, altında o anki aşama kartı; kediler tam ekran canvas'ta */
+:root{
+  --night:#140b24; --dusk:#24123f; --lilac:#c9a7ff; --violet:#8f5bea;
+  --petal:#f3e8ff; --gold:#ffd98a; --ink:#efe6ff; --muted:#a993cc; --bad:#ff8fa8;
+  --display:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --body:"Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{
+  background:radial-gradient(120% 80% at 50% 0%, var(--dusk), var(--night) 70%);
+  background-color:var(--night); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  overflow-x:hidden; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+#stars,#confetti,#cats{position:fixed; inset:0; width:100%; height:100%; pointer-events:none}
+#cats{z-index:1}
+#confetti{z-index:20}
+main{position:relative; z-index:2; max-width:560px; margin:0 auto; padding-block:28px 120px;
+  display:flex; flex-direction:column; align-items:center; gap:22px; text-align:center}
+.eyebrow{font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted)}
+h1{font-family:var(--display); font-weight:600; font-size:clamp(32px,8.5vw,50px); line-height:1.05; margin:0; text-wrap:balance}
+h1 em{color:var(--lilac); font-style:italic}
+
+.progress{display:flex; gap:8px}
+.progress i{width:26px; height:6px; border-radius:3px; background:rgba(201,167,255,.18); transition:background .5s}
+.progress i.done{background:var(--gold)}
+
+.flower{width:min(260px,70vw); aspect-ratio:1; max-width:100%; position:relative; touch-action:none}
+.flower svg{width:100%; height:100%; overflow:visible}
+.petal{transform-origin:150px 150px; transition:transform 2.2s cubic-bezier(.2,.8,.2,1); transform:rotate(0deg) scale(.42,.9)}
+.bud{transform-origin:150px 150px}
+body.hold .bud{animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.06)}}
+body.open .petal{transform:rotate(var(--r)) scale(1,1)}
+body.open .bud{animation:none}
+.glow{opacity:.35; transition:opacity 2s}
+body.open .glow{opacity:1}
+.stamen{opacity:0; transition:opacity 1.2s 1.4s}
+body.open .stamen{opacity:1}
+.ring{fill:none; stroke:var(--gold); stroke-width:5; stroke-linecap:round; opacity:0}
+body.hold .ring{opacity:1}
+
+.card{width:100%; max-width:420px; display:flex; flex-direction:column; gap:14px; align-items:center;
+  background:rgba(201,167,255,.07); border:1px solid rgba(201,167,255,.2); border-radius:18px; padding:20px 18px}
+.card h2{margin:0; font-family:var(--display); font-weight:600; font-size:26px; line-height:1.15; text-wrap:balance}
+.card .lbl{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold)}
+.card p{margin:0; color:var(--muted); max-width:34ch}
+.msg{min-height:1.6em; font-size:14px; color:var(--bad)}
+.msg.ok{color:var(--gold)}
+
+.clock{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%}
+.unit{background:rgba(201,167,255,.08); border:1px solid rgba(201,167,255,.22); border-radius:14px; padding:12px 6px}
+.unit b{display:block; font-weight:300; font-size:clamp(32px,10vw,44px); line-height:1; font-variant-numeric:tabular-nums; color:var(--petal)}
+.unit span{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
+.hints{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; width:100%}
+.hints li{display:flex; gap:12px; align-items:center; text-align:left; padding:11px 14px; border-radius:12px; border:1px dashed rgba(201,167,255,.25); color:var(--muted); font-size:14px}
+.hints li .t{font-variant-numeric:tabular-nums; color:var(--lilac); font-size:13px; min-width:44px}
+.hints li.on{border-style:solid; border-color:rgba(255,217,138,.45); color:var(--ink); background:rgba(255,217,138,.06)}
+.hints li.on .t{color:var(--gold)}
+
+input[type=text],textarea{width:100%; font:inherit; font-size:18px; text-align:center; color:var(--ink);
+  background:rgba(20,11,36,.6); border:1px solid rgba(201,167,255,.35); border-radius:12px; padding:12px; -webkit-user-select:text; user-select:text}
+textarea{min-height:96px; resize:vertical; text-align:left}
+input[type=text]:focus,textarea:focus{outline:2px solid var(--gold); outline-offset:2px}
+.row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+.btn{font:inherit; font-weight:600; font-size:16px; color:#2a1747; background:var(--lilac); border:0; border-radius:999px; padding:12px 26px; cursor:pointer; text-decoration:none; display:inline-block}
+.btn.ghost{background:none; color:var(--lilac); border:1px solid rgba(201,167,255,.35); font-weight:400; font-size:14px; padding:8px 18px}
+.btn.wa{background:#4fd18b; color:#062b17}
+button:focus-visible,a:focus-visible{outline:2px solid var(--gold); outline-offset:4px}
+
+.swatches{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%}
+.swatches button{aspect-ratio:1; border-radius:50%; border:2px solid rgba(255,255,255,.15); cursor:pointer; max-width:100%}
+.swatches button.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.arena{position:relative; width:100%; height:200px}
+.arena button{position:absolute; transition:left .25s, top .25s}
+
+.qcount{font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted)}
+
+.letter{width:100%; text-align:left; background:var(--petal); color:#2a1747; border-radius:4px 22px 4px 22px; padding:28px 24px;
+  box-shadow:0 20px 60px rgba(143,91,234,.35); font-family:var(--display); font-size:21px; line-height:1.55}
+.letter p{margin:0 0 14px}
+.letter .sign{text-align:right; font-style:italic; margin:0}
+.fade{animation:fade 1s both}
+@keyframes fade{from{opacity:0; transform:translateY(14px)}}
+
+.coupons{display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%}
+.coupon{position:relative; aspect-ratio:1.25; border-radius:14px; overflow:hidden; background:linear-gradient(140deg,#fff6dc,#ffe2a6); color:#3a2208;
+  display:flex; align-items:center; justify-content:center; padding:10px; font-family:var(--display); font-weight:600; font-size:19px; line-height:1.15; touch-action:none}
+.coupon canvas{position:absolute; inset:0; width:100%; height:100%; cursor:grab}
+.small{font-size:13px; color:var(--muted)}
+.answers{width:100%; text-align:left; display:flex; flex-direction:column; gap:10px; margin:0; padding:0; list-style:none}
+.answers li{font-size:14px; color:var(--muted)}
+.answers li b{display:block; color:var(--ink); font-weight:400}
+.shoot{position:fixed; left:0; top:0; z-index:12; width:48px; height:48px; border:0; background:none; padding:0; cursor:pointer}
+.shoot::before{content:""; position:absolute; left:50%; top:50%; width:110px; height:2px; background:linear-gradient(90deg,var(--petal),transparent); transform-origin:left center; transform:rotate(-24deg)}
+.shoot::after{content:""; position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px; border-radius:50%; background:#fff; box-shadow:0 0 12px 4px var(--lilac)}
+.starcount{font-size:13px; color:var(--gold)}
+.modal{position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:rgba(10,5,20,.7);
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.modal .card{background:var(--dusk); animation:fade .5s both}
+.modal .reason{font-family:var(--display); font-size:26px; line-height:1.25; color:var(--ink); margin:0; text-wrap:balance}
+.cake{width:100%; max-width:300px}
+.cake svg{width:100%; height:auto; overflow:visible}
+.flame{cursor:pointer; transform-box:fill-box; transform-origin:50% 100%; animation:flick .3s ease-in-out infinite alternate}
+.flame.out{animation:none; opacity:0; transition:opacity .3s}
+@keyframes flick{to{transform:scale(.88,1.08) skewX(4deg)}}
+.smoke{opacity:0}
+.smoke.on{animation:smoke 1.4s ease-out forwards}
+@keyframes smoke{0%{opacity:.7; transform:translateY(0)}100%{opacity:0; transform:translateY(-30px)}}
+.sky{width:100%; aspect-ratio:2/1; max-width:100%; display:block; border-radius:12px; background:#0d0619}
+.games{width:100%; max-width:420px; display:flex; flex-direction:column; gap:12px}
+.games > .lbl{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold)}
+.tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none; font:inherit; font-size:13px; color:var(--ink); background:rgba(201,167,255,.12); border:1px solid rgba(201,167,255,.3); border-radius:999px; padding:7px 14px; cursor:pointer}
+.tabs button.on{background:var(--gold); color:#2a1747; border-color:var(--gold)}
+.praise{font-family:var(--display); font-size:24px; line-height:1.3; color:var(--ink)!important; min-height:3.9em; display:flex; align-items:center; justify-content:center; text-wrap:balance}
+.mem{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%}
+.mem button{aspect-ratio:3/4; border-radius:10px; font-size:28px; border:0; cursor:pointer; background:linear-gradient(140deg,var(--violet),var(--lilac)); color:transparent; transition:transform .25s, background .25s}
+.mem button.up{background:var(--petal); color:inherit; transform:rotateY(180deg) scaleX(-1)}
+.mem button.ok{background:#ffe9b0; color:inherit}
+.catchwrap{position:relative; width:100%; aspect-ratio:1; max-width:100%; border-radius:12px; overflow:hidden}
+.catchcv{position:absolute; inset:0; width:100%; height:100%; background:#0d0619; touch-action:none}
+.petcat{font-size:110px; line-height:1; background:none; border:0; cursor:pointer; transition:transform .12s}
+.petcat:active{transform:scale(.92) rotate(-4deg)}
+.bar{width:100%; height:12px; border-radius:6px; background:rgba(201,167,255,.15); overflow:hidden}
+.bar i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--lilac),#ff8fc7); transition:width .3s}
+.names{font-family:var(--display); font-size:24px; color:var(--ink)!important}
+.names span{font-size:18px}
+.lovenum{font-size:64px; font-weight:300; line-height:1; color:var(--petal); font-variant-numeric:tabular-nums}
+.cookie{font-size:96px; line-height:1; background:none; border:0; cursor:pointer; transition:transform .2s}
+.cookie.crack{animation:crack .5s}
+@keyframes crack{30%{transform:rotate(-12deg) scale(1.1)}60%{transform:rotate(10deg) scale(.95)}}
+.fortune{width:100%; background:#fff6dc; color:#3a2208; border-radius:6px; padding:14px 16px; font-family:var(--display); font-size:21px; line-height:1.3; animation:fade .5s both}
+.sky2{position:relative; width:100%; height:300px; overflow:hidden; border-radius:12px; background:linear-gradient(#1d0f36,#3a1d66)}
+.balloon{position:absolute; bottom:-90px; width:52px; height:64px; border-radius:50% 50% 48% 48%; border:0; cursor:pointer; padding:0; animation:rise linear forwards}
+.balloon::after{content:""; position:absolute; left:50%; top:100%; width:1px; height:30px; background:rgba(255,255,255,.5)}
+.balloon::before{content:""; position:absolute; left:12px; top:10px; width:10px; height:16px; border-radius:50%; background:rgba(255,255,255,.35)}
+@keyframes rise{to{transform:translateY(-420px) translateX(var(--dx))}}
+.toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); z-index:35; transform:translateX(-50%); width:min(92vw,400px);
+  background:var(--petal); color:#2a1747; border-radius:16px; padding:14px 18px; font-family:var(--display); font-size:20px; line-height:1.3; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.toast.pop{animation:toastin .4s both}
+@keyframes toastin{from{opacity:0; transform:translate(-50%,20px)}}
+body.has-admin .toast{bottom:200px}
+#waittext strong{color:var(--gold)}
+.admin{position:fixed; left:0; right:0; bottom:0; z-index:40; background:rgba(13,6,25,.95); border-top:1px solid rgba(255,217,138,.4);
+  padding:10px max(12px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  display:flex; flex-direction:column; gap:8px}
+.admin .head{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:var(--gold); letter-spacing:.08em}
+.admin .bar{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px}
+.admin .bar button{flex:none; font:inherit; font-size:13px; color:var(--ink); background:rgba(201,167,255,.12); border:1px solid rgba(201,167,255,.3); border-radius:999px; padding:6px 12px; cursor:pointer; white-space:nowrap}
+.admin .bar button.cur{background:var(--gold); color:#2a1747; border-color:var(--gold)}
+.admin .info{font-size:12px; color:var(--muted); line-height:1.5}
+.admin .toggle{font:inherit; font-size:12px; color:var(--muted); background:none; border:0; cursor:pointer; padding:4px}
+body.has-admin main{padding-bottom:220px}
+.film{position:relative; width:100%; aspect-ratio:16/9; max-width:100%; border-radius:10px; overflow:hidden; background:#000}
+.film canvas{position:absolute; inset:0; width:100%; height:100%}
+.play{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border:0; cursor:pointer;
+  background:rgba(10,5,20,.55); color:var(--petal); font:inherit; font-size:14px; letter-spacing:.06em}
+.play span{width:56px; height:56px; border-radius:50%; background:var(--lilac); color:#2a1747; display:flex; align-items:center; justify-content:center; font-size:22px; padding-left:4px}
+@media (max-width:360px){.coupons{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.petal,.stamen,.glow{transition:none} .bud,.fade{animation:none!important}}
+</style>
+
+<canvas id="stars"></canvas>
+<canvas id="cats"></canvas>
+<canvas id="confetti"></canvas>
+
+<main>
+  <div class="eyebrow" id="eyebrow">10 Kasım · birtanem, sana bir şey var</div>
+  <h1 id="title">Birtanem, bu çiçek <em>sabah</em> açılacak</h1>
+  <div class="progress" id="progress" hidden><i></i><i></i><i></i><i></i><i></i></div>
+
+  <div class="flower" id="flower" aria-label="Zambak">
+    <svg viewBox="0 0 300 300" aria-hidden="true">
+      <defs>
+        <radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#c9a7ff" stop-opacity=".55"/><stop offset="1" stop-color="#c9a7ff" stop-opacity="0"/></radialGradient>
+        <linearGradient id="pg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7a3fd6"/><stop offset=".45" stop-color="#b98cff"/><stop offset="1" stop-color="#f6eeff"/></linearGradient>
+      </defs>
+      <circle class="glow" cx="150" cy="150" r="150" fill="url(#g)"/>
+      <circle class="ring" id="ring" cx="150" cy="150" r="140" transform="rotate(-90 150 150)" stroke-dasharray="880" stroke-dashoffset="880"/>
+      <g class="bud" id="petals"></g>
+      <g class="stamen" id="stamen"></g>
+    </svg>
+  </div>
+
+  <section class="card" id="s0">
+    <div class="clock" role="timer">
+      <div class="unit"><b id="h">--</b><span>saat</span></div>
+      <div class="unit"><b id="m">--</b><span>dakika</span></div>
+      <div class="unit"><b id="s">--</b><span>saniye</span></div>
+    </div>
+    <p id="waittext"></p>
+    <ul class="hints" id="hints"></ul>
+    <p class="starcount">Beklerken gökyüzüne bak: kayan yıldızları yakala, her biri bir sır açıyor. <span id="rc">0</span>/12</p>
+    <button class="btn ghost" id="skipbtn" type="button">Bekleyemiyorum, şimdi aç</button>
+    <div id="skipbox" hidden style="width:100%;display:flex;flex-direction:column;gap:12px;align-items:center">
+      <p>Erken açmanın tek yolu var birtanem: Taha'dan bu kilidin şifresini iste. Her kilidin şifresi farklı.</p>
+      <a class="btn wa" id="askwa" href="#" target="_blank" rel="noopener">Taha'dan şifre iste</a>
+      <input type="text" id="code" placeholder="Şifre" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="btn" id="codebtn" type="button">Şifreyle aç</button>
+      <div class="msg" id="codemsg"></div>
+    </div>
+  </section>
+
+  <section class="card" id="s1" hidden>
+    <div class="lbl">Kilit 1</div>
+    <h2>Gece açılırım, sabah seni beklerim. Kokum odayı doldurur, adım Z ile başlar.</h2>
+    <input type="text" id="a1" placeholder="Cevabın" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="btn" id="b1" type="button">Kilidi aç</button>
+    <div class="msg" id="m1"></div>
+  </section>
+
+  <section class="card" id="s2" hidden>
+    <div class="lbl">Kilit 2</div>
+    <h2>Bunlardan biri senin rengin birtanem. Onu bul.</h2>
+    <div class="swatches" id="sw"></div>
+    <div class="msg" id="m2"></div>
+  </section>
+
+  <section class="card" id="s3" hidden>
+    <div class="lbl">Kilit 3</div>
+    <h2>Taha seni ne kadar seviyor?</h2>
+    <div class="arena" id="arena">
+      <button class="btn ghost" type="button" data-k="az">Biraz</button>
+      <button class="btn ghost" type="button" data-k="az">Çok</button>
+      <button class="btn" type="button" data-k="ok">Sonsuz</button>
+    </div>
+    <div class="msg" id="m3"></div>
+  </section>
+
+  <section class="card" id="s4" hidden>
+    <div class="lbl">Kilit 4 · Birtanem, seni biraz tanıyayım</div>
+    <div class="qcount" id="qc"></div>
+    <h2 id="qt"></h2>
+    <textarea id="qa" placeholder="İstediğin kadar yaz" spellcheck="false"></textarea>
+    <div class="row">
+      <button class="btn ghost" id="qskip" type="button">Geç</button>
+      <button class="btn" id="qnext" type="button">Devam</button>
+    </div>
+    <p class="small">Cevaplarını sonunda Taha'ya kendin gönderebileceksin.</p>
+  </section>
+
+  <section class="card" id="s5" hidden>
+    <div class="lbl">Son kilit</div>
+    <h2>Parmağını çiçeğin üstüne koy birtanem, bırakma.</h2>
+    <p>Altın halka dolana kadar basılı tut. Bırakırsan baştan başlar. İçinde bir şey var...</p>
+    <div class="msg ok" id="m5"></div>
+  </section>
+
+  <section id="s6" hidden style="width:100%;display:flex;flex-direction:column;gap:22px;align-items:center">
+    <p class="small fade" id="catnote">Kedilere dokun, miyavlıyorlar.</p>
+    <article class="letter fade">
+      <p>Birtanem,</p>
+      <p>Doğum günün kutlu olsun Cemre Betül. Bütün gün bu çiçeğin açılmasını bekledin, kilitleri tek tek açtın. Ben de seninle tanıştığımdan beri her sabahı biraz daha sabırsızlıkla bekliyorum, çünkü güne seninle başlamak çok güzel.</p>
+      <p>Bu yaşın sana gülmeyi, huzuru ve istediğin her şeyi getirsin. Zambak gibi açıl, mor gibi parla. Ben hep yanındayım.</p>
+      <p>Seni çok seviyorum birtanem.</p>
+      <p class="sign">Taha</p>
+    </article>
+    <div class="card fade" style="animation-delay:.2s">
+      <div class="lbl">Sana özel bir film</div>
+      <h2>Birtanem: Bir Kedi Masalı</h2>
+      <div class="film" id="film">
+        <canvas id="filmcv"></canvas>
+        <button class="play" id="play" type="button" aria-label="Filmi oynat"><span>▶</span>Filmi oynat · sesi aç</button>
+      </div>
+      <button class="btn ghost" id="replay" type="button" hidden>Tekrar izle</button>
+    </div>
+    <div class="card fade" style="animation-delay:.3s">
+      <div class="lbl">Pastan hazır</div>
+      <h2>Dilek tut birtanem, sonra mumlara dokunarak üfle</h2>
+      <div class="cake">
+        <svg viewBox="0 0 300 220" id="cake" aria-label="Doğum günü pastası">
+          <ellipse cx="150" cy="205" rx="130" ry="12" fill="#0d0619" opacity=".6"/>
+          <rect x="40" y="130" width="220" height="72" rx="12" fill="#8f5bea"/>
+          <rect x="40" y="130" width="220" height="18" rx="9" fill="#f3e8ff"/>
+          <path d="M40 146 q14 18 28 0 q14 18 28 0 q14 18 28 0 q14 18 28 0 q14 18 28 0 q14 18 28 0 q14 18 28 0 q14 18 24 0" fill="#f3e8ff"/>
+          <rect x="70" y="92" width="160" height="44" rx="10" fill="#c9a7ff"/>
+          <rect x="70" y="92" width="160" height="12" rx="6" fill="#fff6dc"/>
+          <g fill="#ffd98a"><circle cx="70" cy="172" r="4"/><circle cx="120" cy="182" r="4"/><circle cx="180" cy="176" r="4"/><circle cx="230" cy="184" r="4"/><circle cx="150" cy="120" r="3.5"/><circle cx="100" cy="118" r="3.5"/><circle cx="200" cy="118" r="3.5"/></g>
+          <g id="candles"></g>
+        </svg>
+      </div>
+      <div class="msg ok" id="cakemsg"></div>
+    </div>
+    <div class="card fade" style="animation-delay:.5s">
+      <div class="lbl">Hediye kuponların</div>
+      <h2>Altında ne var? Parmağınla kazı</h2>
+      <p>Hepsi gerçek, son kullanma tarihleri yok. Taha'ya göster, hayır diyemez.</p>
+      <div class="coupons" id="coupons"></div>
+      <div class="small" id="cdone"></div>
+    </div>
+    <div class="card fade" style="animation-delay:.7s">
+      <div class="lbl">Bu gece gökyüzü</div>
+      <h2>Yıldızlar bile senin adını yazıyor</h2>
+      <canvas class="sky" id="sky"></canvas>
+      <button class="btn ghost" id="skyagain" type="button">Bir daha çiz</button>
+    </div>
+    <div class="card fade" style="animation-delay:.9s">
+      <div class="lbl">Cevapların</div>
+      <h2>Taha'ya gönder</h2>
+      <ul class="answers" id="answers"></ul>
+      <div class="row">
+        <a class="btn wa" id="wa" href="#" target="_blank" rel="noopener">Taha'ya gönder</a>
+        <button class="btn ghost" id="copy" type="button">Kopyala</button>
+      </div>
+      <div class="small" id="copymsg"></div>
+    </div>
+    <p class="starcount">Kayan yıldızlar hâlâ geçiyor. <span id="rc2">0</span>/12 sır açıldı.</p>
+    <div class="row"><button class="btn ghost" id="again" type="button">Konfeti</button><button class="btn ghost" id="morecats" type="button">Daha çok kedi</button></div>
+  </section>
+  <section class="games" id="games" hidden>
+    <div class="lbl" style="text-align:center">Oyun odası · beklerken oyna birtanem</div>
+    <div class="tabs" id="tabs">
+      <button type="button" data-g="praise" class="on">İltifat</button>
+      <button type="button" data-g="mem">Hafıza</button>
+      <button type="button" data-g="catch">Kalp yakala</button>
+      <button type="button" data-g="pet">Kedi sev</button>
+      <button type="button" data-g="love">Aşk testi</button>
+      <button type="button" data-g="cookie">Şans kurabiyesi</button>
+      <button type="button" data-g="balloon">Balonlar</button>
+    </div>
+
+    <div class="card gpanel" data-p="praise">
+      <h2>İltifat yağmuru</h2>
+      <p class="praise" id="praisetext">Butona bas, sana neden bayıldığımı anlatayım.</p>
+      <button class="btn" id="praisebtn" type="button">Bana iltifat et</button>
+      <div class="small" id="praisecount"></div>
+    </div>
+
+    <div class="card gpanel" data-p="mem" hidden>
+      <h2>Hafıza kartları</h2>
+      <p>Eşleri bul. Hepsini bulunca bir sürprizim var.</p>
+      <div class="mem" id="mem"></div>
+      <div class="small" id="memmsg"></div>
+      <button class="btn ghost" id="memreset" type="button">Yeniden karıştır</button>
+    </div>
+
+    <div class="card gpanel" data-p="catch" hidden>
+      <h2>Kalbimi yakala</h2>
+      <p>Kediyi parmağınla kaydır. 30 saniyede 20 kalp topla, kırık kalplerden kaç.</p>
+      <div class="catchwrap"><canvas class="catchcv" id="catchcv"></canvas>
+        <button class="play" id="catchstart" type="button"><span>▶</span>Başla</button></div>
+      <div class="msg ok" id="catchmsg"></div>
+    </div>
+
+    <div class="card gpanel" data-p="pet" hidden>
+      <h2>Kediyi sev</h2>
+      <p>Kediye dokundukça seni daha çok seviyor.</p>
+      <button class="petcat" id="petcat" type="button" aria-label="Kedi">😺</button>
+      <div class="bar"><i id="petbar"></i></div>
+      <div class="msg ok" id="petmsg"></div>
+    </div>
+
+    <div class="card gpanel" data-p="love" hidden>
+      <h2>Aşk testi</h2>
+      <p class="names">Cemre Betül <span>💜</span> Taha</p>
+      <div class="lovenum" id="lovenum">?</div>
+      <button class="btn" id="lovebtn" type="button">Uyumu ölç</button>
+      <div class="msg ok" id="lovemsg"></div>
+    </div>
+
+    <div class="card gpanel" data-p="cookie" hidden>
+      <h2>Şans kurabiyesi</h2>
+      <p>Kurabiyeyi kır, bugün senin için ne yazıyor bak.</p>
+      <button class="cookie" id="cookie" type="button" aria-label="Şans kurabiyesi">🥠</button>
+      <div class="fortune" id="fortune" hidden></div>
+    </div>
+
+    <div class="card gpanel" data-p="balloon" hidden>
+      <h2>Balon patlat</h2>
+      <p>Her balonun içinde sana bir not var.</p>
+      <div class="sky2" id="sky2"></div>
+      <div class="fortune" id="balloonmsg">Bir balona dokun.</div>
+    </div>
+  </section>
+</main>
+
+<div class="admin" id="admin" hidden>
+  <div class="head"><span>TAHA PANELİ · Cemre bunu görmez</span><button class="toggle" id="admintoggle" type="button">Gizle</button></div>
+  <div id="adminbody">
+    <div class="bar" id="adminbar"></div>
+    <div class="info">Erken açma şifreleri: 10:00 <b>birtanem</b> · 11:30 <b>kedi</b> · 13:00 <b>mor</b> · 14:30 <b>sonsuz</b> · 16:00 <b>cemre</b><br>Cevaplar: Kilit 1 <b>zambak</b> · Kilit 2 <b>mor daire</b> · Kilit 3 <b>Sonsuz</b> · Son kilit: çiçeğe 4 sn basılı tut. Burada yaptıkların kaydedilmez, Cemre'nin telefonunu etkilemez.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="card">
+    <div class="lbl" id="rlbl">Seni sevme sebebim</div>
+    <p class="reason" id="rtext"></p>
+    <button class="btn" id="rclose" type="button">Kapat</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Gün boyu kilit saatleri (İstanbul saati). Anahtar = o saatte açılan aşama.
+  var T={1:Date.parse("2026-11-10T10:00:00+03:00"),2:Date.parse("2026-11-10T11:30:00+03:00"),3:Date.parse("2026-11-10T13:00:00+03:00"),
+         4:Date.parse("2026-11-10T14:30:00+03:00"),5:Date.parse("2026-11-10T16:00:00+03:00")};
+  var TLBL={1:"10:00",2:"11:30",3:"13:00",4:"14:30",5:"16:00"};
+  var preview=location.hash==="#onizleme";
+  if(preview){var b0=Date.now();for(var q=1;q<=5;q++)T[q]=b0+5000*q;}
+  var IG="melankosal"; // Taha'nın Instagram kullanıcı adı
+  var KEY="cemre-dogumgunu-v2",admin=false;
+  function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}}
+  function save(){if(admin||preview)return;try{localStorage.setItem(KEY,JSON.stringify({reached:reached,answers:answers,caught:caught,skips:skips}))}catch(e){}}
+  var $=function(id){return document.getElementById(id)},pad=function(n){return String(n).padStart(2,"0")};
+  var norm=function(s){return s.toLocaleLowerCase("tr-TR").trim().replace(/[^a-zçğıöşü]/g,"")};
+  var dpr=Math.min(2,window.devicePixelRatio||1);
+
+  var HINTS=[
+    {at:"2026-11-10T01:00:00+03:00",t:"01:00",text:"Bu sayfa sadece senin için yapıldı birtanem."},
+    {at:"2026-11-10T03:00:00+03:00",t:"03:00",text:"Kilitlerden biri en sevdiğin çiçeği soracak."},
+    {at:"2026-11-10T05:00:00+03:00",t:"05:00",text:"Biri de en sevdiğin rengi. Bazı cevaplar senden kaçar."},
+    {at:"2026-11-10T07:00:00+03:00",t:"07:00",text:"Son ipucu: Çiçek açılınca içinden çok tatlı şeyler çıkacak. Sesini aç."}
+  ];
+  HINTS.forEach(function(h){var li=document.createElement("li");li.dataset.at=Date.parse(h.at);
+    li.innerHTML='<span class="t">'+h.t+'</span><span class="x">Kilitli</span>';li.querySelector(".x").dataset.text=h.text;$("hints").appendChild(li);});
+
+  var QUESTIONS=[
+    "Birtanem, en sevdiğin yemek ne?",
+    "Hayalindeki tatil nereye?",
+    "Seni en çok ne güldürür?",
+    "Taha'nın en sevdiğin hali hangisi?",
+    "Bizim en güzel anımız sence hangisi?",
+    "Bu yaş için en büyük dileğin ne?",
+    "Taha'nın sana hiç söylemediği ama duymak istediğin bir şey var mı?",
+    "Şu an aklından geçen ilk şey?"
+  ];
+  var answers=[];
+
+  // Petals
+  var NS="http://www.w3.org/2000/svg";
+  for(var i=0;i<6;i++){var p=document.createElementNS(NS,"path");p.setAttribute("class","petal");
+    p.setAttribute("d","M150 150 C 118 118, 120 60, 150 22 C 180 60, 182 118, 150 150 Z");p.setAttribute("fill","url(#pg)");
+    p.setAttribute("stroke","#e9dbff");p.setAttribute("stroke-opacity",".5");p.style.setProperty("--r",(i*60+(i%2?0:30))+"deg");
+    p.style.transitionDelay=(i*.08)+"s";$("petals").appendChild(p);}
+  for(var j=0;j<6;j++){var a=(j*60+15)*Math.PI/180,x=150+Math.sin(a)*46,y=150-Math.cos(a)*46;
+    var l=document.createElementNS(NS,"line");l.setAttribute("x1",150);l.setAttribute("y1",150);l.setAttribute("x2",x);l.setAttribute("y2",y);
+    l.setAttribute("stroke","#f6eeff");l.setAttribute("stroke-width","1.4");$("stamen").appendChild(l);
+    var c=document.createElementNS(NS,"ellipse");c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("rx","4");c.setAttribute("ry","7");
+    c.setAttribute("transform","rotate("+(j*60+15)+" "+x+" "+y+")");c.setAttribute("fill","#ffd98a");$("stamen").appendChild(c);}
+
+  var saved=load();
+  var reached=Math.min(6,Math.max(1,+saved.reached||1));
+  if(Array.isArray(saved.answers))answers=saved.answers;
+  var stage=-1,force=false,inited={};
+  var CODES={1:"birtanem",2:"kedi",3:"mor",4:"sonsuz",5:"cemre"};
+  var skips=(saved.skips&&typeof saved.skips==="object")?saved.skips:{};
+  var TEASE={2:"Sırada renkli bir kilit var.",3:"Sıradaki kilit senden kaçacak, hazır ol.",4:"Sırada seni tanımak istediğim sorular var.",5:"Son kilit geliyor. Çiçeğin içinde bir şey kıpırdıyor..."};
+  function showOnly(id){["s0","s1","s2","s3","s4","s5","s6"].forEach(function(s){$(s).hidden=(s!==id)});$("games").hidden=!(id==="s0"||id==="none");}
+  function setBars(){var bars=$("progress").children;for(var k=0;k<5;k++)bars[k].classList.toggle("done",k<reached-1);}
+  function render(){
+    setBars();
+    if(reached>=6){if(stage!==6)showFinal(stage===5);return;}
+    var now=Date.now();
+    if(!force&&!skips[reached]&&now<T[reached]){
+      if(stage===0)return; stage=0;showOnly("s0");$("skipbox").hidden=true;$("skipbtn").hidden=false;$("code").value="";$("codemsg").textContent="";
+      $("askwa").href=IG?("https://ig.me/m/"+IG):("https://wa.me/?text="+encodeURIComponent("Taha, "+TLBL[reached]+" kilidinin şifresini ver, bekleyemiyorum 🥺"));document.body.classList.remove("hold");
+      var first=reached===1;$("hints").hidden=!first;$("progress").hidden=first;
+      $("waittext").innerHTML=first?"Kilit <strong>10:00'da</strong> açılıyor. Ama bitmedi birtanem: gün boyu bir buçuk saatte bir yeni kilit açılacak. Gece gelen ipuçlarını iyi oku."
+        :"Kilit "+(reached-1)+" tamam birtanem. Sonraki kilit saat <strong>"+TLBL[reached]+"</strong>'de açılıyor. "+TEASE[reached];
+      if(!first){$("eyebrow").textContent="10 Kasım · biraz sabır birtanem";$("title").innerHTML="Sıradaki sürpriz <em>"+TLBL[reached]+"</em>'de";}
+      tick();return;
+    }
+    if(stage===reached)return;
+    stage=reached;showOnly("s"+reached);$("progress").hidden=false;
+    $("eyebrow").textContent="Kilit "+reached+" açıldı";$("title").innerHTML="Birtanem, çiçeğe <em>ulaş</em>";
+    if(reached===2)buildSwatches();if(reached===3)setupArena();if(reached===4){qi=Math.min(qi,QUESTIONS.length-1);showQ();}
+    document.body.classList.toggle("hold",reached===5);
+    try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+    if(!admin)chime(3);
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  $("skipbtn").addEventListener("click",function(){$("skipbox").hidden=false;this.hidden=true;});
+  function tryCode(){
+    if(norm($("code").value)===norm(CODES[reached])){$("codemsg").className="msg ok";$("codemsg").textContent="Şifre doğru. Açılıyor...";skips[reached]=true;save();chime(3);setTimeout(function(){stage=-1;render();},800);}
+    else{var v=norm($("code").value),other=null;for(var k in CODES)if(norm(CODES[k])===v)other=k;
+      $("codemsg").className="msg";
+      $("codemsg").textContent=other?("Bu şifre "+TLBL[other]+" kilidinin. Şu an "+TLBL[reached]+" kilidi bekliyor, onun şifresini Taha'ya sor."):"Yanlış şifre. Taha'ya sor birtanem.";}
+  }
+  $("codebtn").addEventListener("click",tryCode);
+  $("code").addEventListener("keydown",function(e){if(e.key==="Enter")tryCode();});
+  function done(n){if(reached!==n)return;reached=n+1;force=admin;save();setTimeout(render,2400);}
+  function tick(){
+    var now=Date.now(),target=T[Math.min(reached,5)],left=Math.max(0,target-now),sec=Math.floor(left/1000);
+    $("h").textContent=pad(Math.floor(sec/3600));$("m").textContent=pad(Math.floor(sec%3600/60));$("s").textContent=pad(sec%60);
+    Array.prototype.forEach.call($("hints").children,function(li){var x=li.querySelector(".x");
+      if((now>=+li.dataset.at||preview||admin)&&!li.classList.contains("on")){li.classList.add("on");x.textContent=x.dataset.text;}});
+    if(stage===0&&reached<6&&left<=0)render();
+  }
+  setInterval(tick,1000);
+
+  // Kilit 1
+  var tries1=0;
+  function check1(){var v=norm($("a1").value);
+    if(v==="zambak"){$("m1").className="msg ok";$("m1").textContent="Doğru birtanem. "+praise();chime(2);done(1);}
+    else{tries1++;$("m1").className="msg";$("m1").textContent=tries1<3?"Olmadı. Bir daha dene.":tries1<6?"İpucu: En sevdiğin çiçek. 6 harf, Z ile başlıyor.":"Cevap: zambak. Yaz ve aç birtanem.";}}
+  $("b1").addEventListener("click",check1);
+  $("a1").addEventListener("keydown",function(e){if(e.key==="Enter")check1();});
+
+  // Kilit 2
+  function buildSwatches(){
+    var cols=["#e0567a","#3fa7d6","#9b5de5","#f4a259","#5ccf8a","#ff6fb5","#2f4b9a","#d9c94a"].sort(function(){return Math.random()-.5});
+    $("sw").innerHTML="";
+    cols.forEach(function(c){var b=document.createElement("button");b.type="button";b.style.background=c;b.setAttribute("aria-label","Renk");
+      b.addEventListener("click",function(){
+        if(c==="#9b5de5"){$("m2").className="msg ok";$("m2").textContent="Mor. Tabii ki. "+praise();chime(2);done(2);}
+        else{b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake");$("m2").className="msg";$("m2").textContent="Bu senin rengin değil birtanem.";}
+      });$("sw").appendChild(b);});
+  }
+
+  // Kilit 3
+  function setupArena(){
+    var ar=$("arena"),bs=ar.querySelectorAll("button"),W=ar.clientWidth,pos=[[W*.05,20],[W*.4,90],[W*.62,20]];
+    bs.forEach(function(b,i){b.style.left=Math.min(pos[i][0],W-110)+"px";b.style.top=pos[i][1]+"px";
+      if(b.dataset.k==="az"){
+        var run=function(e){e.preventDefault();var w=ar.clientWidth-b.offsetWidth,h=ar.clientHeight-b.offsetHeight;
+          b.style.left=Math.random()*w+"px";b.style.top=Math.random()*h+"px";
+          $("m3").className="msg";$("m3").textContent=["Az bile değil.","O cevap kaçıyor, fark ettin mi?","Yanlış seçenek seni istemiyor."][Math.floor(Math.random()*3)];};
+        b.addEventListener("pointerenter",run);b.addEventListener("pointerdown",run);b.addEventListener("click",run);
+      }else{b.style.zIndex=3;var ok=function(e){if(e)e.preventDefault();if(reached!==3)return;$("m3").className="msg ok";$("m3").textContent="Evet. Sonsuz. "+praise();chime(2);done(3);};
+        b.addEventListener("pointerdown",ok);b.addEventListener("click",ok);}
+    });
+  }
+
+  // Kilit 4: sorular
+  var qi=Math.min(answers.length,QUESTIONS.length-1);
+  function showQ(){$("qc").textContent=(qi+1)+" / "+QUESTIONS.length;$("qt").textContent=QUESTIONS[qi];$("qa").value="";}
+  function nextQ(skip){
+    answers[qi]=skip?"":$("qa").value.trim();qi++;chime(1);
+    save();if(qi<QUESTIONS.length)showQ();else done(4);
+  }
+  $("qnext").addEventListener("click",function(){nextQ(false)});
+  $("qskip").addEventListener("click",function(){nextQ(true)});
+
+  // Son kilit: basılı tut
+  var holdT=null,start=0,HOLD=4000,fl=$("flower"),ring=$("ring");
+  function frame(){var p=Math.min(1,(Date.now()-start)/HOLD);ring.setAttribute("stroke-dashoffset",880*(1-p));
+    $("m5").textContent=p<.33?"Bırakma...":p<.66?"Bir şey kıpırdıyor...":"Az kaldı!";
+    if(p>=1){holdT=null;bloom();return;}holdT=requestAnimationFrame(frame);}
+  function down(e){if(stage!==5||holdT)return;e.preventDefault();ensureAudio();start=Date.now();holdT=requestAnimationFrame(frame);try{fl.setPointerCapture(e.pointerId)}catch(_){}}
+  function up(){if(stage!==5||!holdT)return;cancelAnimationFrame(holdT);holdT=null;ring.setAttribute("stroke-dashoffset",880);$("m5").textContent="Bıraktın. Baştan.";}
+  fl.addEventListener("pointerdown",down);fl.addEventListener("pointerup",up);fl.addEventListener("pointercancel",up);
+  fl.addEventListener("contextmenu",function(e){e.preventDefault()});
+
+  function bloom(){reached=6;save();showFinal(true);}
+  function showFinal(anim){
+    stage=6;showOnly("none");document.body.classList.remove("hold");document.body.classList.add("open");
+    $("progress").hidden=false;setBars();
+    $("eyebrow").textContent="10 Kasım";$("title").innerHTML="İyi ki doğdun, <em>birtanem</em>";
+    var d=anim?1:.3;
+    if(anim){chime(6);try{navigator.vibrate&&navigator.vibrate([80,60,80,60,200])}catch(e){}}
+    setTimeout(function(){catBurst(70)},900*d);setTimeout(function(){catBurst(50)},2400*d);setTimeout(burst,1200*d);if(anim)setTimeout(burst,3000);
+    setTimeout(function(){$("s6").hidden=false;filmPoster();buildCake();buildCoupons();buildAnswers();setTimeout(drawSky,1500*d);},2600*d);
+  }
+  $("again").addEventListener("click",burst);
+  $("morecats").addEventListener("click",function(){catBurst(40)});
+
+  // Cevaplar
+  function answerText(){
+    var t="Taha'ya cevaplarım 💜\n\n";
+    QUESTIONS.forEach(function(q,i){t+=q+"\n→ "+(answers[i]||"(geçtim)")+"\n\n";});
+    return t+"— Cemre";
+  }
+  function buildAnswers(){
+    var ul=$("answers");ul.innerHTML="";
+    QUESTIONS.forEach(function(q,i){var li=document.createElement("li");li.textContent=q;var b=document.createElement("b");b.textContent=answers[i]||"(geçtin)";li.appendChild(b);ul.appendChild(li);});
+    $("wa").href=IG?("https://ig.me/m/"+IG):("https://wa.me/?text="+encodeURIComponent(answerText()));
+    $("wa").textContent=IG?"Kopyala ve Instagram'dan gönder":"WhatsApp'tan gönder";
+    $("wa").onclick=function(){if(IG){try{navigator.clipboard.writeText(answerText()).then(function(){$("copymsg").textContent="Cevapların kopyalandı. Instagram'da Taha'ya yapıştır.";},function(){});}catch(e){}}};
+  }
+  $("copy").addEventListener("click",function(){
+    var t=answerText();
+    try{navigator.clipboard.writeText(t).then(function(){$("copymsg").textContent="Kopyalandı. Taha'ya yapıştır.";},fallback);}catch(e){fallback();}
+    function fallback(){$("copymsg").textContent="Kopyalanamadı. Ekran görüntüsü alıp gönderebilirsin.";}
+  });
+
+  // Kuponlar
+  var COUPONS=["Sınırsız sarılma, ne zaman istersen","Bir gün boyunca prenses modu: ne dersen o","Senin seçtiğin yerde kahvaltı, hesap benden","İstediğin kadar fotoğrafını çekerim, hiç söylenmem","Kızdığında tek kullanımlık 'haklısın birtanem' kartı","Birlikte kedi sevmeye gidiyoruz"],scratched=0;
+  function buildCoupons(){
+    if($("coupons").childNodes.length)return;
+    COUPONS.forEach(function(txt){
+      var d=document.createElement("div");d.className="coupon";d.innerHTML="<span>"+txt+"</span>";
+      var cv=document.createElement("canvas");d.appendChild(cv);$("coupons").appendChild(d);
+      requestAnimationFrame(function(){
+        var r=d.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;var x=cv.getContext("2d");
+        var g=x.createLinearGradient(0,0,cv.width,cv.height);g.addColorStop(0,"#8f5bea");g.addColorStop(1,"#c9a7ff");
+        x.fillStyle=g;x.fillRect(0,0,cv.width,cv.height);
+        x.fillStyle="rgba(255,255,255,.85)";x.font=(15*dpr)+"px Outfit, sans-serif";x.textAlign="center";x.fillText("kazı birtanem",cv.width/2,cv.height/2+5*dpr);
+        x.globalCompositeOperation="destination-out";var drawing=false,done=false;
+        function scr(e){if(!drawing||done)return;var b=cv.getBoundingClientRect();x.beginPath();x.arc((e.clientX-b.left)*dpr,(e.clientY-b.top)*dpr,18*dpr,0,7);x.fill();}
+        function check(){if(done)return;var data=x.getImageData(0,0,cv.width,cv.height).data,clear=0;
+          for(var i=3;i<data.length;i+=64)if(data[i]===0)clear++;
+          if(clear/(data.length/64)>.5){done=true;cv.style.transition="opacity .5s";cv.style.opacity=0;setTimeout(function(){cv.remove()},500);
+            scratched++;chime(1);if(scratched===COUPONS.length){$("cdone").textContent="Hepsini açtın. Ekran görüntüsü al, hepsi geçerli.";burst();catBurst(25);}}}
+        cv.addEventListener("pointerdown",function(e){drawing=true;try{cv.setPointerCapture(e.pointerId)}catch(_){}scr(e)});
+        cv.addEventListener("pointermove",scr);
+        cv.addEventListener("pointerup",function(){drawing=false;check()});cv.addEventListener("pointercancel",function(){drawing=false;check()});
+      });
+    });
+  }
+
+  // Ses
+  var ac=null;
+  function ensureAudio(){try{var C=window.AudioContext||window.webkitAudioContext;if(C&&!ac)ac=new C();if(ac&&ac.state==="suspended")ac.resume();}catch(e){}}
+  function chime(n){ensureAudio();if(!ac)return;
+    [523.25,659.25,783.99,1046.5,783.99,1046.5].slice(0,n).forEach(function(f,i){var o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.value=f;
+      var t=ac.currentTime+i*.17;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.18,t+.03);g.gain.exponentialRampToValueAtTime(.001,t+.9);
+      o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+1);});}
+  function meow(){ensureAudio();if(!ac)return;
+    var o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter(),t=ac.currentTime,base=500+Math.random()*350;
+    o.type="sawtooth";f.type="bandpass";f.Q.value=6;
+    o.frequency.setValueAtTime(base,t);o.frequency.linearRampToValueAtTime(base*1.6,t+.15);o.frequency.linearRampToValueAtTime(base*.8,t+.5);
+    f.frequency.setValueAtTime(900,t);f.frequency.linearRampToValueAtTime(1800,t+.15);f.frequency.linearRampToValueAtTime(700,t+.5);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.05);g.gain.exponentialRampToValueAtTime(.001,t+.55);
+    o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.6);}
+
+  // Canvas boyutları
+  var sc=$("stars"),sx=sc.getContext("2d"),kc=$("cats"),kx=kc.getContext("2d"),cc=$("confetti"),cx=cc.getContext("2d");
+  var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function size(){[sc,kc,cc].forEach(function(c){c.width=innerWidth*dpr;c.height=innerHeight*dpr});}
+  size();addEventListener("resize",size);
+
+  // Yıldızlar
+  var stars=[];for(var k=0;k<90;k++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.3+.3,p:Math.random()*6});
+  function drawStars(t){sx.clearRect(0,0,sc.width,sc.height);
+    stars.forEach(function(s){var a=.35+.35*Math.sin(t/900+s.p);sx.fillStyle="rgba(233,219,255,"+a+")";sx.beginPath();sx.arc(s.x*sc.width,s.y*sc.height,s.r*dpr,0,7);sx.fill();});
+    if(!reduce)requestAnimationFrame(drawStars);}
+  requestAnimationFrame(drawStars);
+
+  // Kediler
+  var CATCOL=[["#f29a3a","#ffd2a1"],["#2b2730","#4a4552"],["#f7f3ee","#ffd6e0"],["#8d8a96","#c7c3cf"],["#e9cfa6","#fff0d6"],
+    ["#b98cff","#e7d6ff"],["#ff8fc7","#ffd3ea"],["#7fb8ff","#d5e8ff"],["#6b4a34","#a8806a"],["#ffd98a","#fff3cf"],["#5ccf8a","#c9f2da"]];
+  var cats=[],catRun=false,queen=null,qx=innerWidth/2;
+  addEventListener("pointermove",function(e){qx=e.clientX});
+  addEventListener("pointerdown",function(e){qx=e.clientX});
+  function catBurst(n){
+    var fr=$("flower").getBoundingClientRect(),ox=(fr.left+fr.width/2)*dpr,oy=(fr.top+fr.height/2)*dpr;
+    for(var i=0;i<n;i++){var col=CATCOL[Math.floor(Math.random()*CATCOL.length)];
+      cats.push({x:ox,y:oy,vx:(Math.random()-.5)*16*dpr,vy:(-Math.random()*16-6)*dpr,s:(.7+Math.random()*.7)*dpr,
+        c:col[0],e:col[1],calico:Math.random()<.15,rot:0,vr:(Math.random()-.5)*.25,ground:false,dir:Math.random()<.5?-1:1,
+        walk:.6+Math.random()*1.2,phase:Math.random()*6,sit:0,blink:Math.random()*300,jumpCd:0});}
+    if(!queen){queen={x:ox,y:oy,vx:0,vy:-14*dpr,s:1.7*dpr,c:"#9b5de5",e:"#e7d6ff",calico:false,rot:0,vr:0,ground:false,dir:1,walk:2.2,phase:0,sit:0,blink:50,queen:true};cats.push(queen);}
+    if(cats.length>220){var rest=cats.filter(function(c){return !c.queen});rest.splice(0,rest.length-219);cats=rest.concat([queen]);}
+    for(var m=0;m<Math.min(5,n/10);m++)setTimeout(meow,m*180+Math.random()*120);
+    document.body.style.paddingBottom="";if(!catRun){catRun=true;requestAnimationFrame(catStep);}
+  }
+  function drawCat(c,t){
+    var s=c.s*14;kx.save();kx.translate(c.x,c.y);kx.rotate(c.rot);kx.scale(c.dir,1);
+    var bob=c.ground&&!c.sit?Math.sin(t/120*c.walk+c.phase)*1.5*c.s:0;
+    // kuyruk
+    kx.strokeStyle=c.c;kx.lineWidth=s*.28;kx.lineCap="round";kx.beginPath();kx.moveTo(-s*.9,-s*.1);
+    kx.quadraticCurveTo(-s*1.6,-s*.5+Math.sin(t/200+c.phase)*s*.3,-s*1.3,-s*1.2);kx.stroke();
+    // gövde
+    kx.fillStyle=c.c;kx.beginPath();kx.ellipse(0,bob,s*1.05,s*.65,0,0,7);kx.fill();
+    if(c.calico){kx.fillStyle="#f29a3a";kx.beginPath();kx.ellipse(-s*.3,bob-s*.2,s*.35,s*.25,0,0,7);kx.fill();
+      kx.fillStyle="#2b2730";kx.beginPath();kx.ellipse(s*.35,bob+s*.1,s*.25,s*.2,0,0,7);kx.fill();}
+    // bacaklar
+    kx.fillStyle=c.c;var lg=c.ground&&!c.sit?Math.sin(t/90*c.walk+c.phase)*s*.15:0;
+    [-.6,-.25,.3,.65].forEach(function(px,i){kx.fillRect(s*px-s*.11,bob+s*.35+(i%2?lg:-lg),s*.22,s*.45);});
+    // kafa
+    var hx=s*.95,hy=bob-s*.55;kx.beginPath();kx.arc(hx,hy,s*.55,0,7);kx.fill();
+    kx.beginPath();kx.moveTo(hx-s*.45,hy-s*.25);kx.lineTo(hx-s*.35,hy-s*.85);kx.lineTo(hx-s*.05,hy-s*.45);kx.fill();
+    kx.beginPath();kx.moveTo(hx+s*.45,hy-s*.25);kx.lineTo(hx+s*.35,hy-s*.85);kx.lineTo(hx+s*.05,hy-s*.45);kx.fill();
+    kx.fillStyle=c.e;kx.beginPath();kx.moveTo(hx-s*.38,hy-s*.35);kx.lineTo(hx-s*.32,hy-s*.68);kx.lineTo(hx-s*.14,hy-s*.45);kx.fill();
+    kx.beginPath();kx.moveTo(hx+s*.38,hy-s*.35);kx.lineTo(hx+s*.32,hy-s*.68);kx.lineTo(hx+s*.14,hy-s*.45);kx.fill();
+    // göz
+    var closed=(t+c.blink*10)%3000<140;kx.fillStyle="#1a1020";kx.strokeStyle="#1a1020";kx.lineWidth=s*.07;
+    if(closed){kx.beginPath();kx.moveTo(hx-s*.28,hy-s*.05);kx.lineTo(hx-s*.1,hy-s*.05);kx.moveTo(hx+s*.1,hy-s*.05);kx.lineTo(hx+s*.28,hy-s*.05);kx.stroke();}
+    else{kx.beginPath();kx.arc(hx-s*.19,hy-s*.05,s*.08,0,7);kx.arc(hx+s*.19,hy-s*.05,s*.08,0,7);kx.fill();}
+    kx.fillStyle="#ff8fa8";kx.beginPath();kx.arc(hx,hy+s*.1,s*.06,0,7);kx.fill();
+    if(c.queen){kx.fillStyle="#ffd98a";kx.beginPath();var cy=hy-s*.62;
+      kx.moveTo(hx-s*.32,cy);kx.lineTo(hx-s*.36,cy-s*.42);kx.lineTo(hx-s*.16,cy-s*.18);kx.lineTo(hx,cy-s*.5);kx.lineTo(hx+s*.16,cy-s*.18);kx.lineTo(hx+s*.36,cy-s*.42);kx.lineTo(hx+s*.32,cy);kx.closePath();kx.fill();
+      kx.fillStyle="#ff6fb5";kx.beginPath();kx.arc(hx,cy-s*.12,s*.06,0,7);kx.fill();}
+    kx.restore();
+  }
+  function catStep(t){
+    var W=kc.width,H=kc.height,floor=H-10*dpr;kx.clearRect(0,0,W,H);
+    cats.forEach(function(c){
+      if(!c.ground){c.vy+=.35*dpr;c.vx*=.995;c.x+=c.vx;c.y+=c.vy;c.rot+=c.vr;
+        if(c.x<20*dpr){c.x=20*dpr;c.vx*=-.7}if(c.x>W-20*dpr){c.x=W-20*dpr;c.vx*=-.7}
+        var gy=floor-c.s*14*.8;
+        if(c.y>=gy){c.y=gy;if(Math.abs(c.vy)>4*dpr){c.vy*=-.35;c.vx*=.6;}else{c.ground=true;c.vy=0;c.rot=0;c.dir=c.vx<0?-1:1;}}
+      }else{
+        if(c.queen){var dx=qx*dpr-c.x;if(Math.abs(dx)>10*dpr){c.dir=dx<0?-1:1;c.x+=c.dir*Math.min(Math.abs(dx)*.04,4*dpr);c.sit=0;}else c.sit=1;}
+        else if(c.sit>0)c.sit--;else{c.x+=c.dir*c.walk*dpr;if(Math.random()<.004)c.sit=60+Math.random()*120;}
+        if(c.x<20*dpr){c.x=20*dpr;c.dir=1}if(c.x>W-20*dpr){c.x=W-20*dpr;c.dir=-1}
+        if(!c.queen&&Math.random()<.0015){c.ground=false;c.vy=-(6+Math.random()*6)*dpr;c.vx=c.dir*2*dpr;c.vr=0;}
+      }
+      drawCat(c,t);
+    });
+    requestAnimationFrame(catStep);
+  }
+  // kedilere dokun
+  addEventListener("pointerdown",function(e){
+    if(!cats.length||stage!==6)return;var px=e.clientX*dpr,py=e.clientY*dpr,hit=null,best=1e9;
+    cats.forEach(function(c){var d=Math.hypot(c.x-px,c.y-py);if(d<c.s*24&&d<best){best=d;hit=c;}});
+    if(hit){meow();hit.ground=false;hit.vy=-12*dpr;hit.vx=(Math.random()-.5)*6*dpr;hit.vr=(Math.random()-.5)*.3;}
+  });
+
+  // Kayan yıldızlar ve sebepler
+  var REASONS=[
+    "Gülüşün. Kötü günümü bile düzeltiyor.",
+    "Sana birtanem dediğimde yüzünün aldığı hal.",
+    "Beni benden iyi tanıman.",
+    "Seninle sustuğumuzda bile her şeyin güzel olması.",
+    "Zambak gibi zarif olman.",
+    "Moru o kadar seviyorsun ki artık ben de seviyorum.",
+    "Sabah ilk mesajın.",
+    "Benimle sabırlı olman.",
+    "Kedi gibi tatlı huysuzluğun.",
+    "Gözlerin.",
+    "Yanındayken kendimi evde hissetmem.",
+    "Sen olman. Başka sebep lazım değil."
+  ];
+  var caught=Math.min(12,+saved.caught||0);
+  function spawnStar(){
+    if(stage>0&&stage<6){schedule();return;}
+    if(caught>=REASONS.length)return;
+    var b=document.createElement("button");b.className="shoot";b.type="button";b.setAttribute("aria-label","Kayan yıldız");
+    document.body.appendChild(b);
+    var W=innerWidth,H=innerHeight,y0=H*(.06+Math.random()*.3),x0=W+40,dist=W+260;
+    var anim=b.animate([{transform:"translate("+x0+"px,"+y0+"px)"},{transform:"translate("+(x0-dist)+"px,"+(y0+dist*.45)+"px)"}],{duration:reduce?5000:3200,easing:"linear"});
+    anim.onfinish=function(){b.remove()};
+    b.addEventListener("pointerdown",function(e){e.stopPropagation();anim.cancel();b.remove();showReason();});
+    schedule();
+  }
+  function schedule(){setTimeout(spawnStar,(preview?2500:5000)+Math.random()*5000);}
+  schedule();
+  function showReason(){
+    if(caught>=REASONS.length)return;
+    $("rlbl").textContent="Seni sevme sebebim · "+(caught+1)+"/"+REASONS.length;
+    $("rtext").textContent=REASONS[caught];caught++;
+    $("rc").textContent=caught;$("rc2").textContent=caught;
+    $("modal").hidden=false;save();chime(caught===REASONS.length?6:3);
+    if(caught===REASONS.length)$("rtext").textContent+=" (Hepsini yakaladın birtanem.)";
+  }
+  $("rclose").addEventListener("click",function(){$("modal").hidden=true;});
+
+  // Pasta
+  function buildCake(){
+    var g=$("candles");if(g.childNodes.length)return;var n=7,lit=n,cols=["#ffd98a","#ff8fc7","#7fb8ff","#5ccf8a","#f3e8ff","#ff8fa8","#c9a7ff"];
+    for(var i=0;i<n;i++){
+      var x=88+i*(124/(n-1)),gg=document.createElementNS(NS,"g");
+      gg.innerHTML='<rect x="'+(x-4)+'" y="58" width="8" height="36" rx="2" fill="'+cols[i]+'"/>'+
+        '<rect x="'+(x-4)+'" y="64" width="8" height="3" fill="#fff" opacity=".6"/><rect x="'+(x-4)+'" y="76" width="8" height="3" fill="#fff" opacity=".6"/>'+
+        '<line x1="'+x+'" y1="58" x2="'+x+'" y2="52" stroke="#2a1747" stroke-width="1.5"/>'+
+        '<circle class="smoke" cx="'+x+'" cy="44" r="6" fill="#d9d2e6"/>'+
+        '<g class="flame"><ellipse cx="'+x+'" cy="42" rx="7" ry="12" fill="#ffb347"/><ellipse cx="'+x+'" cy="45" rx="3.5" ry="7" fill="#fff3cf"/></g>'+
+        '<circle cx="'+x+'" cy="42" r="18" fill="transparent" class="hit"/>';
+      g.appendChild(gg);
+      (function(gg){var fl=gg.querySelector(".flame"),sm=gg.querySelector(".smoke"),hit=gg.querySelector(".hit");
+        function blow(e){if(fl.classList.contains("out"))return;if(e)e.stopPropagation();fl.classList.add("out");sm.classList.add("on");puff();lit--;
+          if(lit===0){$("cakemsg").textContent="Dileğin kabul olsun birtanem.";burst();catBurst(15);chime(6);}}
+        fl.addEventListener("pointerdown",blow);hit.addEventListener("pointerdown",blow);hit.addEventListener("pointerenter",function(e){if(e.buttons)blow(e)});
+      })(gg);
+    }
+  }
+  function puff(){ensureAudio();if(!ac)return;var len=ac.sampleRate*.25,buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
+    for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+    var s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=buf;f.type="lowpass";f.frequency.value=900;g.gain.value=.35;
+    s.connect(f);f.connect(g);g.connect(ac.destination);s.start();}
+
+
+  // ---------- Film ----------
+  var FW=640,FH=360,fcv=$("filmcv"),fx=fcv.getContext("2d"),filmStart=0,filmRaf=0,filmAudio=null,filmPlaying=false;
+  var fstars=[];(function(){var r=7;function rnd(){r=(r*9301+49297)%233280;return r/233280;}for(var i=0;i<70;i++)fstars.push([rnd()*FW,rnd()*200,rnd()*1.3+.4,rnd()*6]);})();
+  var fireworks=[];
+  function sizeFilm(){var r=fcv.getBoundingClientRect();if(!r.width)return;fcv.width=r.width*dpr;fcv.height=r.height*dpr;}
+  var SUBS=[[4,11.5,"Bir zamanlar, moru çok seven bir kız varmış."],[12,19.5,"Bir gece biri gelip yanına oturmuş."],
+    [20,27.5,"Birlikte bir zambak büyütmüşler."],[28,35.5,"Ve her gün biraz daha güzelleşmiş."]];
+  var CREDITS=[["BAŞROL","Cemre Betül"],["","(birtanem)"],["YÖNETMEN · SENARYO","Taha"],["YAN ROLLER","120 kedi"],["ÇEKİM YERİ","Taha'nın kalbi"],
+    ["ÖZEL TEŞEKKÜR","Mor renk ve zambaklar"],["",""],["DEVAM FİLMİ","Her gün, birlikte"]];
+  var FILM_END=58,posterT=9;
+  function ease(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);}
+  function fade(t,a,b,f){f=f||.8;return Math.min(ease((t-a)/f),ease((b-t)/f));}
+  function sitCat(x,y,col,dark,s,tail,bow,look){
+    fx.save();fx.translate(x,y);fx.scale(s,s);fx.fillStyle=col;
+    fx.beginPath();fx.ellipse(0,-22,17,24,0,0,7);fx.fill();
+    fx.beginPath();fx.arc(0,-52,13,0,7);fx.fill();
+    fx.beginPath();fx.moveTo(-11,-58);fx.lineTo(-9,-72);fx.lineTo(-2,-63);fx.fill();
+    fx.beginPath();fx.moveTo(11,-58);fx.lineTo(9,-72);fx.lineTo(2,-63);fx.fill();
+    fx.fillStyle=dark;fx.beginPath();fx.moveTo(-9,-60);fx.lineTo(-8,-68);fx.lineTo(-4,-62);fx.fill();fx.beginPath();fx.moveTo(9,-60);fx.lineTo(8,-68);fx.lineTo(4,-62);fx.fill();
+    if(tail!==false){fx.strokeStyle=col;fx.lineWidth=5;fx.lineCap="round";fx.beginPath();fx.moveTo(look*12,-4);fx.quadraticCurveTo(look*34,-2,look*30,-24);fx.stroke();}
+    if(bow){fx.fillStyle="#ff6fb5";fx.beginPath();fx.moveTo(6,-62);fx.lineTo(16,-68);fx.lineTo(15,-58);fx.closePath();fx.moveTo(6,-62);fx.lineTo(-3,-70);fx.lineTo(-2,-58);fx.closePath();fx.fill();
+      fx.beginPath();fx.arc(6,-62,2.5,0,7);fx.fill();}
+    fx.restore();
+  }
+  function heart(x,y,s,a,c){fx.save();fx.globalAlpha=a;fx.fillStyle=c||"#ff8fc7";fx.translate(x,y);fx.scale(s,s);fx.beginPath();
+    fx.moveTo(0,4);fx.bezierCurveTo(-7,-2,-5,-9,0,-5);fx.bezierCurveTo(5,-9,7,-2,0,4);fx.fill();fx.restore();}
+  function lilyAt(x,y,g,o){ // g: büyüme 0-1, o: açılma 0-1
+    var h=48*ease(g);fx.strokeStyle="#5ccf8a";fx.lineWidth=3;fx.beginPath();fx.moveTo(x,y);fx.quadraticCurveTo(x+6,y-h*.5,x,y-h);fx.stroke();
+    if(g>.5){fx.fillStyle="#5ccf8a";fx.beginPath();fx.ellipse(x-8,y-h*.35,9,3,-.6,0,7);fx.fill();}
+    if(g>.9){for(var i=0;i<6;i++){var ang=(i*60+30)*Math.PI/180*ease(o)+(1-ease(o))*(i%2?.12:-.12);
+      fx.save();fx.translate(x,y-h);fx.rotate(ang);fx.scale(.4+.6*ease(o),1);var gr=fx.createLinearGradient(0,0,0,-22);gr.addColorStop(0,"#7a3fd6");gr.addColorStop(1,"#f6eeff");
+      fx.fillStyle=gr;fx.beginPath();fx.moveTo(0,0);fx.bezierCurveTo(-8,-8,-7,-18,0,-24);fx.bezierCurveTo(7,-18,8,-8,0,0);fx.fill();fx.restore();}
+      if(o>.6){fx.fillStyle="#ffd98a";fx.beginPath();fx.arc(x,y-h,2.5,0,7);fx.fill();}}
+  }
+  function filmFrame(now){
+    var t=filmPlaying?(now-filmStart)/1000:posterT;
+    var sc=fcv.width/FW;fx.setTransform(sc,0,0,sc,0,0);
+    // gökyüzü
+    var g=fx.createLinearGradient(0,0,0,FH);g.addColorStop(0,"#0b0518");g.addColorStop(1,"#2a1450");fx.fillStyle=g;fx.fillRect(0,0,FW,FH);
+    fstars.forEach(function(st){fx.fillStyle="rgba(240,230,255,"+(.4+.4*Math.sin(t*1.5+st[3]))+")";fx.beginPath();fx.arc(st[0],st[1],st[2],0,7);fx.fill();});
+    var mg=fx.createRadialGradient(505,78,10,505,78,80);mg.addColorStop(0,"rgba(255,240,210,.35)");mg.addColorStop(1,"rgba(255,240,210,0)");fx.fillStyle=mg;fx.fillRect(400,0,220,180);
+    fx.fillStyle="#fff3d6";fx.beginPath();fx.arc(505,78,30,0,7);fx.fill();fx.fillStyle="#2a1450";fx.globalAlpha=.08;fx.beginPath();fx.arc(495,70,7,0,7);fx.arc(515,90,5,0,7);fx.fill();fx.globalAlpha=1;
+    // kayan yıldız + havai fişek
+    if(t>28&&t<40){var k=((t-28)%2.5)/2.5;fx.strokeStyle="rgba(255,255,255,"+(1-k)+")";fx.lineWidth=2;fx.beginPath();var sx0=560-k*300,sy0=30+k*90;fx.moveTo(sx0,sy0);fx.lineTo(sx0+50,sy0-15);fx.stroke();
+      if(Math.random()<.04)fireworks.push({x:120+Math.random()*400,y:50+Math.random()*90,r:0,c:["#c9a7ff","#ffd98a","#ff8fc7","#7fb8ff"][Math.floor(Math.random()*4)]});}
+    fireworks=fireworks.filter(function(f){return f.r<50});
+    fireworks.forEach(function(f){f.r+=.8;fx.globalAlpha=1-f.r/50;fx.fillStyle=f.c;for(var i=0;i<14;i++){var a=i/14*Math.PI*2;fx.beginPath();fx.arc(f.x+Math.cos(a)*f.r,f.y+Math.sin(a)*f.r,1.8,0,7);fx.fill();}fx.globalAlpha=1;});
+    // şehir silueti + çatı
+    fx.fillStyle="#140a26";[[0,230,60],[55,210,50],[100,240,70],[420,215,60],[475,235,55],[530,205,50],[580,225,60]].forEach(function(b){fx.fillRect(b[0],b[1],b[2],FH-b[1]);});
+    fx.fillStyle="rgba(255,217,138,.55)";[[15,250],[70,225],[85,245],[120,255],[440,230],[545,220],[600,240]].forEach(function(w){fx.fillRect(w[0],w[1],6,8);});
+    fx.fillStyle="#1d0f36";fx.fillRect(170,270,300,FH-270);fx.fillRect(200,240,28,30);fx.fillStyle="#2a1747";fx.fillRect(196,236,36,8);
+    // kediler
+    var cx=290,tx;
+    if(t<12)tx=FW+80;else if(t<17)tx=FW+80-(FW+80-350)*ease((t-12)/5);else tx=350;
+    var heartTails=t>=28;
+    sitCat(cx,270,"#b98cff","#e7d6ff",1,!heartTails,true,-1);
+    if(t>=12){var walking=t<17;fx.save();if(walking)fx.translate(0,-Math.abs(Math.sin(t*9))*3);sitCat(tx,270,"#4a4552","#8d8a96",1.08,!heartTails,false,1);fx.restore();}
+    if(heartTails){var p=ease((t-28)/2.5);fx.lineWidth=5;fx.lineCap="round";
+      fx.strokeStyle="#b98cff";fx.beginPath();fx.moveTo(cx+10,266);fx.bezierCurveTo(cx+10-40*p,266-30*p,cx+12-20*p,266-75*p,320,266-48*p);fx.stroke();
+      fx.strokeStyle="#4a4552";fx.beginPath();fx.moveTo(tx-10,266);fx.bezierCurveTo(tx-10+40*p,266-30*p,tx-12+20*p,266-75*p,320,266-48*p);fx.stroke();
+      if(p>.95)heart(320,190,2.2,.6+.4*Math.sin(t*4),"#ff8fc7");}
+    // kalpler
+    if(t>17&&t<28){for(var h=0;h<4;h++){var ph=((t-17)*.6+h*.25)%1;heart(320+Math.sin(ph*9+h)*10,250-ph*90,1.2,1-ph);}}
+    // zambak
+    if(t>=20)lilyAt(320,272,(t-20)/3,(t-23)/3);
+    // altyazı bandı
+    fx.fillStyle="#000";fx.fillRect(0,0,FW,26);fx.fillRect(0,FH-26,FW,26);
+    // başlık
+    if(t<4.2){fx.fillStyle="#000";fx.globalAlpha=1-ease((t-3.2)/1);fx.fillRect(0,0,FW,FH);fx.globalAlpha=fade(t,.3,3.6,.7);
+      fx.fillStyle="#f3e8ff";fx.textAlign="center";fx.font="italic 600 40px 'Cormorant Garamond', Georgia, serif";fx.fillText("Birtanem",FW/2,170);
+      fx.font="300 13px Outfit, sans-serif";fx.fillStyle="#c9a7ff";fx.fillText("BİR TAHA YAPIMI",FW/2,200);fx.globalAlpha=1;}
+    SUBS.forEach(function(sb){if(t>sb[0]&&t<sb[1]){fx.globalAlpha=fade(t,sb[0],sb[1],.5);fx.textAlign="center";fx.font="italic 500 22px 'Cormorant Garamond', Georgia, serif";
+      fx.fillStyle="rgba(0,0,0,.55)";var w=fx.measureText(sb[2]).width+28;fx.fillRect(FW/2-w/2,296,w,32);fx.fillStyle="#fff";fx.fillText(sb[2],FW/2,318);fx.globalAlpha=1;}});
+    if(t>36&&t<43){fx.globalAlpha=fade(t,36,43,.8);fx.textAlign="center";fx.fillStyle="rgba(10,5,20,.45)";fx.fillRect(0,26,FW,FH-52);
+      fx.font="300 14px Outfit, sans-serif";fx.fillStyle="#ffd98a";fx.fillText("BUGÜN O KIZIN DOĞUM GÜNÜ",FW/2,140);
+      fx.font="italic 600 44px 'Cormorant Garamond', Georgia, serif";fx.fillStyle="#f3e8ff";fx.fillText("İyi ki doğdun, birtanem",FW/2,190);fx.globalAlpha=1;}
+    // jenerik
+    if(t>=43){fx.globalAlpha=ease((t-43)/1);fx.fillStyle="#000";fx.fillRect(0,0,FW,FH);fx.globalAlpha=1;
+      var off=FH+20-(t-44)*34;fx.textAlign="center";
+      CREDITS.forEach(function(c,i){var y=off+i*52;if(y<-20||y>FH+40)return;
+        fx.font="300 11px Outfit, sans-serif";fx.fillStyle="#a993cc";fx.fillText(c[0],FW/2,y);
+        fx.font="italic 600 24px 'Cormorant Garamond', Georgia, serif";fx.fillStyle="#f3e8ff";fx.fillText(c[1],FW/2,y+26);});
+      if(t>FILM_END-3.5){fx.globalAlpha=ease((t-(FILM_END-3.5))/1);fx.font="italic 600 46px 'Cormorant Garamond', Georgia, serif";fx.fillStyle="#c9a7ff";fx.fillText("Son",FW/2,FH/2+14);
+        heart(FW/2,FH/2+44,2,fx.globalAlpha);fx.globalAlpha=1;}}
+    if(filmPlaying&&t<FILM_END)filmRaf=requestAnimationFrame(filmFrame);
+    else if(filmPlaying){filmPlaying=false;posterT=FILM_END;stopFilmMusic();$("replay").hidden=false;}
+  }
+  function filmMusic(){ensureAudio();if(!ac)return;var master=ac.createGain();master.gain.value=.12;master.connect(ac.destination);filmAudio=master;
+    var N={C4:261.63,E4:329.63,F4:349.23,G4:392,A4:440,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,B5:987.77,C6:1046.5};
+    var mel=["E5","G5","A5","G5","E5","D5","C5","D5","E5","G5","C6","B5","A5","G5","E5","G5","A5","C6","B5","G5","A5","G5","E5","D5","C5","E5","D5","C5","D5","E5","C5","C5"];
+    var bass=["C4","A4","F4","G4","C4","A4","F4","G4"],t0=ac.currentTime+.05,beat=.42;
+    for(var rep=0;rep*mel.length*beat<FILM_END;rep++)mel.forEach(function(n,i){var tt=t0+(rep*mel.length+i)*beat;if(tt-t0>FILM_END-1)return;
+      var o=ac.createOscillator(),g2=ac.createGain();o.type="triangle";o.frequency.value=N[n];g2.gain.setValueAtTime(0,tt);g2.gain.linearRampToValueAtTime(1,tt+.02);g2.gain.exponentialRampToValueAtTime(.001,tt+beat*1.8);
+      o.connect(g2);g2.connect(master);o.start(tt);o.stop(tt+beat*2);
+      if(i%4===0){var b=ac.createOscillator(),bg=ac.createGain();b.type="sine";b.frequency.value=N[bass[(i/4)%8]]/2;bg.gain.setValueAtTime(0,tt);bg.gain.linearRampToValueAtTime(.8,tt+.05);bg.gain.exponentialRampToValueAtTime(.001,tt+beat*4);
+        b.connect(bg);bg.connect(master);b.start(tt);b.stop(tt+beat*4);}});
+  }
+  function stopFilmMusic(){if(filmAudio){try{filmAudio.gain.setTargetAtTime(0,ac.currentTime,.3);var m=filmAudio;setTimeout(function(){m.disconnect()},1500);}catch(e){}filmAudio=null;}}
+  function playFilm(){sizeFilm();cancelAnimationFrame(filmRaf);stopFilmMusic();fireworks=[];$("play").hidden=true;$("replay").hidden=true;
+    filmPlaying=true;filmStart=performance.now();filmMusic();filmRaf=requestAnimationFrame(filmFrame);}
+  $("play").addEventListener("click",playFilm);$("replay").addEventListener("click",playFilm);
+  function filmPoster(){sizeFilm();if(!filmPlaying)filmFrame(0);}
+
+
+  // ---------- İltifatlar ----------
+  var PRAISE=["Gülüşün bütün odayı aydınlatıyor.","Bugün dünya, sen doğduğun için daha güzel.","Gözlerine bakınca her şeyi unutuyorum.",
+    "Sesini duymak günümün en güzel anı.","Zambaklar bile senin yanında sönük kalıyor.","Mor sana yakışıyor ama asıl sen mora yakışıyorsun.",
+    "Kalbin o kadar güzel ki anlatamam.","Seninle her şey daha kolay.","En sıradan günü bile özel yapıyorsun.",
+    "Akıllısın, tatlısın, bir de güzelsin. Haksızlık bu.","Kediler seni kıskanıyor, onlardan tatlısın.","Yanında olmak benim en sevdiğim yer.",
+    "Bir mesajın bütün günümü düzeltiyor.","Saçların, gülüşün, bakışın... hepsi favorim.","Seni tanıdığım gün hayatımın en şanslı günüymüş.",
+    "Sarılman dünyanın en güvenli yeri.","Kızdığında bile çok tatlısın.","Sen benim birtanemsin, ikincisi yok.","Bu yaş sana çok yakışacak.",
+    "Her fotoğrafın ayrı güzel.","Seninle susmak bile güzel.","Kahkahan en sevdiğim şarkı.","Seni düşününce kendiliğimden gülümsüyorum.",
+    "Dünyanın en güzel doğum günü kızı sensin.","Senin yanında kendim olabiliyorum.","Her gün sana yeniden aşık oluyorum.",
+    "Yüzündeki o küçük gülümseme için her şeyi yaparım.","Senin olduğun her yer ev gibi.","Prenses değilsin, kraliçesin."];
+  var pOrder=PRAISE.map(function(_,i){return i}).sort(function(){return Math.random()-.5}),pIdx=0,pCount=0;
+  function praise(){var t=PRAISE[pOrder[pIdx%pOrder.length]];pIdx++;return t;}
+  function toast(txt){var t=$("toast");t.textContent=txt;t.hidden=false;t.classList.remove("pop");void t.offsetWidth;t.classList.add("pop");clearTimeout(toast.h);toast.h=setTimeout(function(){t.hidden=true},4500);}
+  $("toast").addEventListener("click",function(){this.hidden=true});
+  $("praisebtn").addEventListener("click",function(){var el=$("praisetext");el.textContent=praise();el.classList.remove("fade");void el.offsetWidth;el.classList.add("fade");
+    pCount++;chime(2);$("praisecount").textContent=pCount<10?pCount+" iltifat aldın":pCount+" iltifat aldın. Daha çok var, hepsi doğru.";if(pCount%5===0)burst();});
+
+  // Sekmeler
+  var curTab="praise";
+  Array.prototype.forEach.call($("tabs").children,function(b){b.addEventListener("click",function(){
+    curTab=b.dataset.g;Array.prototype.forEach.call($("tabs").children,function(x){x.classList.toggle("on",x===b)});
+    document.querySelectorAll(".gpanel").forEach(function(pn){pn.hidden=pn.dataset.p!==curTab});
+    if(curTab==="mem"&&!$("mem").childNodes.length)buildMem();
+    if(curTab==="catch")drawCatchIdle();
+    if(curTab==="balloon")startBalloons();
+  });});
+
+  // Hafıza
+  var memFirst=null,memLock=false,memFound=0,memMoves=0;
+  function buildMem(){
+    var sy=["🐱","💜","🌙","⭐","🎂","🌷"],deck=sy.concat(sy).sort(function(){return Math.random()-.5});
+    $("mem").innerHTML="";memFirst=null;memLock=false;memFound=0;memMoves=0;$("memmsg").textContent="";
+    deck.forEach(function(e){var b=document.createElement("button");b.type="button";b.textContent=e;b.dataset.e=e;b.setAttribute("aria-label","Kart");
+      b.addEventListener("click",function(){
+        if(memLock||b.classList.contains("up")||b.classList.contains("ok"))return;b.classList.add("up");chime(1);
+        if(!memFirst){memFirst=b;return;}memMoves++;
+        if(memFirst.dataset.e===b.dataset.e){memFirst.classList.add("ok");b.classList.add("ok");memFirst=null;memFound++;
+          if(memFound===6){$("memmsg").textContent=memMoves+" hamlede bitirdin. "+praise();burst();chime(6);toast("Hafızan da kalbin gibi güçlü birtanem.");}}
+        else{memLock=true;var a=memFirst;memFirst=null;setTimeout(function(){a.classList.remove("up");b.classList.remove("up");memLock=false;},700);}
+      });$("mem").appendChild(b);});
+  }
+  $("memreset").addEventListener("click",buildMem);
+
+  // Kalp yakala
+  var ccv=$("catchcv"),ccx=ccv.getContext("2d"),CW=300,cGame=null;
+  function sizeCatch(){var r=ccv.getBoundingClientRect();if(!r.width)return;ccv.width=r.width*dpr;ccv.height=r.height*dpr;}
+  function drawCatchIdle(){sizeCatch();var k=ccv.width/CW;ccx.setTransform(k,0,0,k,0,0);ccx.clearRect(0,0,CW,CW);ccx.textAlign="center";ccx.font="40px serif";ccx.fillText("😺",150,270);}
+  function catchMove(e){if(!cGame)return;var r=ccv.getBoundingClientRect();cGame.x=Math.max(20,Math.min(280,(e.clientX-r.left)/r.width*CW));}
+  ccv.addEventListener("pointerdown",function(e){catchMove(e);try{ccv.setPointerCapture(e.pointerId)}catch(_){}});ccv.addEventListener("pointermove",catchMove);
+  $("catchstart").addEventListener("click",function(){
+    sizeCatch();$("catchstart").hidden=true;$("catchmsg").textContent="";ensureAudio();
+    cGame={x:150,items:[],score:0,t0:performance.now(),last:0};requestAnimationFrame(catchStep);
+  });
+  function catchStep(now){
+    var g=cGame;if(!g)return;var el=(now-g.t0)/1000,left=Math.max(0,30-el),k=ccv.width/CW;ccx.setTransform(k,0,0,k,0,0);ccx.clearRect(0,0,CW,CW);
+    if(now-g.last>420){g.last=now;var bad=Math.random()<.22;g.items.push({x:20+Math.random()*260,y:-20,v:1.6+Math.random()*1.8+el*.04,e:bad?"💔":(Math.random()<.5?"💜":"❤️"),bad:bad});}
+    ccx.textAlign="center";ccx.font="26px serif";
+    g.items=g.items.filter(function(it){it.y+=it.v;
+      if(it.y>245&&it.y<285&&Math.abs(it.x-g.x)<28){if(it.bad){g.score=Math.max(0,g.score-2);}else{g.score++;chime(1);}return false;}
+      if(it.y>320)return false;ccx.fillText(it.e,it.x,it.y);return true;});
+    ccx.font="44px serif";ccx.fillText(g.score>=20?"😻":"😺",g.x,280);
+    ccx.font="600 15px Outfit, sans-serif";ccx.fillStyle="#efe6ff";ccx.textAlign="left";ccx.fillText("💜 "+g.score+" / 20",12,24);ccx.textAlign="right";ccx.fillText(Math.ceil(left)+" sn",288,24);
+    if(g.score>=20||left<=0){var win=g.score>=20;cGame=null;$("catchstart").hidden=false;$("catchstart").lastChild.textContent=" Tekrar oyna";
+      $("catchmsg").textContent=win?"Kalbimi 20 kez yakaladın. Zaten tamamen senin.":"Az kaldı! Kalbim kaçmıyor ama, tekrar dene.";
+      if(win){burst();chime(6);toast(praise());}return;}
+    requestAnimationFrame(catchStep);
+  }
+
+  // Kedi sev
+  var petLove=0;
+  function purr(){ensureAudio();if(!ac)return;var o=ac.createOscillator(),g=ac.createGain(),lfo=ac.createOscillator(),lg=ac.createGain(),t=ac.currentTime;
+    o.type="sawtooth";o.frequency.value=48;lfo.frequency.value=24;lg.gain.value=.08;lfo.connect(lg);lg.connect(g.gain);
+    var f=ac.createBiquadFilter();f.type="lowpass";f.frequency.value=300;g.gain.setValueAtTime(.08,t);g.gain.linearRampToValueAtTime(0,t+.7);
+    o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t);lfo.start(t);o.stop(t+.75);lfo.stop(t+.75);}
+  $("petcat").addEventListener("click",function(){
+    if(petLove>=100){meow();toast(praise());return;}
+    petLove=Math.min(100,petLove+9);$("petbar").style.width=petLove+"%";
+    if(Math.random()<.3)meow();else purr();
+    $("petmsg").textContent=petLove<40?"Mırr...":petLove<80?"Kedi gözlerini kapattı, çok mutlu.":petLove<100?"Neredeyse aşık oldu!":"";
+    if(petLove>=100){$("petcat").textContent="😻";$("petmsg").textContent="Kedi sana aşık oldu. Ama Taha daha çok seviyor.";burst();chime(6);}
+  });
+
+  // Aşk testi
+  var loving=false;
+  $("lovebtn").addEventListener("click",function(){
+    if(loving)return;loving=true;$("lovemsg").textContent="Hesaplanıyor...";var t0=performance.now(),n=$("lovenum");
+    (function f(now){var p=Math.min(1,(now-t0)/3200),v=Math.floor(100*(1-Math.pow(1-p,3)));n.textContent="%"+v;
+      if(p<1){if(Math.random()<.15)chime(1);requestAnimationFrame(f);return;}
+      setTimeout(function(){n.textContent="%∞";$("lovemsg").textContent="Makine 100'de durmadı, ölçü yetmedi. Sonuç: sonsuz uyum.";burst();chime(6);loving=false;},700);
+    })(t0);
+  });
+
+  // Şans kurabiyesi
+  var FORT=["Bu yıl en çok güldüğün yıl olacak.","Bu akşam seni çok güzel bir sürpriz bekliyor.","Seni çok seven biri şu an seni düşünüyor.",
+    "Dileğin gerçekleşecek. Ama önce Taha'ya sarılman lazım.","Önündeki yıl mor renkli ve zambak kokulu.","Bugün ne istersen o olacak, kural bu.",
+    "Yakında bir kedi seni sevecek. Belki iki.","Hayallerinden biri bu yıl gerçek oluyor.","Bugün aynaya bakınca dünyanın en güzel kızını göreceksin."];
+  var fIdx=Math.floor(Math.random()*FORT.length);
+  $("cookie").addEventListener("click",function(){var c=$("cookie");c.classList.remove("crack");void c.offsetWidth;c.classList.add("crack");puff();
+    var f=$("fortune");f.hidden=false;f.textContent=FORT[fIdx%FORT.length];fIdx++;f.classList.remove("fortune");void f.offsetWidth;f.classList.add("fortune");});
+
+  // Balonlar
+  var BNOTE=["Seni seviyorum.","Bugün senin günün.","Dünyanın en tatlı kızı.","Birtanem.","Bu akşam sana sıkıca sarılacağım.","Gülüşün favorim.",
+    "Kediler kadar tatlısın, hatta daha fazla.","Zambak kızım.","Bir dileğin varsa söyle, hallederim.","Her şeyim."],bTimer=null,bI=0;
+  function startBalloons(){if(bTimer)return;spawnBalloon();bTimer=setInterval(function(){if(curTab!=="balloon"||$("games").hidden){clearInterval(bTimer);bTimer=null;return;}spawnBalloon();},1100);}
+  function spawnBalloon(){var sky=$("sky2"),b=document.createElement("button"),cols=["#ff8fc7","#c9a7ff","#ffd98a","#7fb8ff","#5ccf8a","#ff8fa8","#9b5de5"];
+    b.className="balloon";b.type="button";b.setAttribute("aria-label","Balon");b.style.background=cols[Math.floor(Math.random()*cols.length)];
+    b.style.left=(5+Math.random()*75)+"%";b.style.setProperty("--dx",(Math.random()*40-20)+"px");b.style.animationDuration=(5+Math.random()*3)+"s";
+    b.addEventListener("pointerdown",function(e){e.stopPropagation();puff();chime(1);$("balloonmsg").textContent=BNOTE[bI%BNOTE.length];bI++;b.remove();});
+    b.addEventListener("animationend",function(){b.remove()});sky.appendChild(b);}
+
+  // Takımyıldız: CEMRE + kalp
+  var LETTERS={C:[[[4,0],[0,0],[0,6],[4,6]]],E:[[[4,0],[0,0],[0,6],[4,6]],[[0,3],[3,3]]],
+    M:[[[0,6],[0,0],[2,3],[4,0],[4,6]]],R:[[[0,6],[0,0],[4,0],[4,3],[0,3],[4,6]]]};
+  var skyRun=0;
+  function drawSky(){
+    var cv=$("sky"),r=cv.getBoundingClientRect();if(!r.width)return;cv.width=r.width*dpr;cv.height=r.height*dpr;var x=cv.getContext("2d");
+    var word="CEMRE",unit=cv.width/36,ox=unit*4,oy=cv.height*.14,segs=[];
+    for(var i=0;i<word.length;i++){LETTERS[word[i]].forEach(function(line){
+      for(var k=0;k<line.length-1;k++)segs.push([ox+(i*6+line[k][0])*unit,oy+line[k][1]*unit,ox+(i*6+line[k+1][0])*unit,oy+line[k+1][1]*unit]);});}
+    var hx=cv.width/2,hy=oy+unit*9.4,hs=unit*.9,hp=[];
+    for(var t=0;t<=24;t++){var a=t/24*Math.PI*2;hp.push([hx+hs*16*Math.pow(Math.sin(a),3)/8,hy-hs*(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))/8]);}
+    for(var h=0;h<hp.length-1;h++)segs.push([hp[h][0],hp[h][1],hp[h+1][0],hp[h+1][1],1]);
+    var bg=[];for(var b=0;b<70;b++)bg.push([Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.2+.3,Math.random()*6]);
+    var id=++skyRun,t0=performance.now(),DUR=reduce?10:6500;
+    (function fr(now){if(id!==skyRun)return;var p=Math.min(1,(now-t0)/DUR),shown=p*segs.length;
+      x.clearRect(0,0,cv.width,cv.height);
+      bg.forEach(function(s){x.fillStyle="rgba(233,219,255,"+(.25+.25*Math.sin(now/700+s[3]))+")";x.beginPath();x.arc(s[0],s[1],s[2]*dpr,0,7);x.fill();});
+      x.lineCap="round";
+      for(var i=0;i<segs.length;i++){if(i>shown)break;var s=segs[i],f=Math.min(1,shown-i);
+        x.strokeStyle=s[4]?"rgba(255,143,199,.75)":"rgba(201,167,255,.7)";x.lineWidth=1.4*dpr;x.beginPath();x.moveTo(s[0],s[1]);x.lineTo(s[0]+(s[2]-s[0])*f,s[1]+(s[3]-s[1])*f);x.stroke();
+        x.fillStyle=s[4]?"#ffd3ea":"#fff3cf";x.shadowColor="#c9a7ff";x.shadowBlur=8*dpr;x.beginPath();x.arc(s[0],s[1],2.2*dpr,0,7);x.fill();
+        if(f>=1){x.beginPath();x.arc(s[2],s[3],2.2*dpr,0,7);x.fill();}x.shadowBlur=0;}
+      requestAnimationFrame(fr);})(t0);
+  }
+  $("skyagain").addEventListener("click",drawSky);
+
+  // Konfeti
+  var bits=[],running=false,cols=["#c9a7ff","#8f5bea","#f3e8ff","#ffd98a","#b98cff"];
+  function burst(){for(var i=0;i<140;i++)bits.push({x:cc.width/2,y:cc.height*.32,vx:(Math.random()-.5)*14*dpr,vy:(-Math.random()*13-4)*dpr,
+    w:(Math.random()*6+4)*dpr,h:(Math.random()*10+5)*dpr,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[i%cols.length],life:0});
+    if(!running){running=true;requestAnimationFrame(step)}}
+  function step(){cx.clearRect(0,0,cc.width,cc.height);
+    bits=bits.filter(function(b){return b.y<cc.height+40&&b.life<400});
+    bits.forEach(function(b){b.vy+=.28*dpr;b.vx*=.99;b.x+=b.vx;b.y+=b.vy;b.r+=b.vr;b.life++;
+      cx.save();cx.translate(b.x,b.y);cx.rotate(b.r);cx.fillStyle=b.c;cx.fillRect(-b.w/2,-b.h/2,b.w,b.h*Math.abs(Math.cos(b.r)));cx.restore();});
+    if(bits.length)requestAnimationFrame(step);else{running=false;cx.clearRect(0,0,cc.width,cc.height);}}
+  // Başlangıç
+  $("rc").textContent=caught;$("rc2").textContent=caught;
+  render();
+  function setupAdmin(){
+    if(admin)return;admin=true;document.body.classList.add("has-admin");$("admin").hidden=false;
+    var items=[[0,"Gece"],[1,"K1 10:00"],[2,"K2 11:30"],[3,"K3 13:00"],[4,"Sorular 14:30"],[5,"Son 16:00"],[6,"Final"],["r","Kayan yıldız"]];
+    var bar=$("adminbar");
+    items.forEach(function(it){var b=document.createElement("button");b.type="button";b.textContent=it[1];b.dataset.k=it[0];
+      b.addEventListener("click",function(){
+        if(it[0]==="r"){caught=caught%REASONS.length;showReason();return;}
+        var n=it[0];document.body.classList.remove("open");
+        if(n===0){reached=1;force=false;}else{reached=n;force=true;}
+        if(n===4){qi=0;}
+        if(n===5)$("ring").setAttribute("stroke-dashoffset",880);
+        stage=-1;$("s6").hidden=true;render();
+        Array.prototype.forEach.call(bar.children,function(x){x.classList.toggle("cur",x===b)});
+      });bar.appendChild(b);});
+    $("admintoggle").addEventListener("click",function(){var h=!$("adminbody").hidden;$("adminbody").hidden=h;this.textContent=h?"Göster":"Gizle";document.body.classList.toggle("has-admin",!h);});
+  }
+  if(location.hash==="#taha")setupAdmin();
+  function ownerCheck(){try{if(window.claude&&claude.use){claude.use("user").then(function(u){if(u)u.isOwner().then(function(o){if(o)setupAdmin();}).catch(function(){});}).catch(function(){});return true;}}catch(e){}return false;}
+  if(!ownerCheck())setTimeout(ownerCheck,1500);
+  try{if(false)claude.use("user").then(function(u){if(u)u.isOwner().then(function(o){if(o)setupAdmin();}).catch(function(){});}).catch(function(){});}catch(e){}
+})();
+</script>
+
+</body>
+</html>
